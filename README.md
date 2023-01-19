@@ -8,10 +8,9 @@ This script allows you to extract images from TV shows and upload them to slow.p
 The script can be run from the command line with the following arguments:
 
 ```
-usage: extract_frame.py [-h] [-t FILE_TYPE] [-n NUM_SHOWS] [-f NUM_FRAMES] [-e EPISODE]
-               folder_path
+usage: extract_frame.py [-h] [-t FILE_TYPE] [-n NUM_SHOWS] [-f NUM_FRAMES] [-e EPISODE] [-tc TIMECODE] folder_path
 
-Extracts images from TV shows and uploads them to slow.pics.
+Extracts images from TV shows and uploads them to slow.pics. (In the futur)
 
 positional arguments:
   folder_path           The path of the folder containing the TV show files
