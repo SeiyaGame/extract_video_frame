@@ -73,7 +73,8 @@ def extract_frame(filepath, timecode=None, type='jpg'):
 
     # Pas tres propre mais fonctionne :D
     td = datetime.timedelta(seconds=timecode)
-    human_timecode = td.__str__()[:-3].replace(':', '_')
+    human_timecode = td.__str__().replace(':', '_')
+
     print(f"The timecode is: {td}")
 
     output_path = f"{human_timecode}_{filename}-{human_timecode}-{episode_number}.{type}"
@@ -89,6 +90,7 @@ def main():
     parser.add_argument('-n', '--num_shows', default=1, help='The number of TV shows')
     parser.add_argument('-f', '--num_frames', default=1, help='The number of frames to extract from the same TV show')
     parser.add_argument('-e', '--episode', default=None, help='The episode number to extract images from')
+    parser.add_argument('-tc', '--timecode', default=None, help='The timecode to extract the frame')
     args = parser.parse_args()
 
     folder_path = args.folder_path
@@ -96,9 +98,18 @@ def main():
     num_shows = int(args.num_shows)
     num_frames = int(args.num_frames)
     episode = args.episode
+    timecode = args.timecode
+
+    if not os.path.exists(folder_path):
+        print(f"Error: The folder path '{folder_path}' does not exist.")
+        return
 
     # Get a list of all files in the folder with the specified file type
     files = [f for f in os.listdir(folder_path) if f.endswith(file_type)]
+
+    if len(files) == 0:
+        print(f"Error: No files with the type '{file_type}' found in the folder '{folder_path}'.")
+        return
 
     if num_shows > len(files):
         print(f"Error: The number of TV shows is greater than the number of available files. Maximum number of files: {len(files)}")
@@ -119,7 +130,7 @@ def main():
 
         for j in range(num_frames):
             # Call the extract_frame function on the chosen file
-            extract_frame(filepath)
+            extract_frame(filepath, timecode)
 
         # Remove the chosen file from the list to avoid choosing it again
         files.remove(chosen_file)
