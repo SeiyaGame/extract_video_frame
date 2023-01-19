@@ -8,7 +8,7 @@ This script allows you to extract images from TV shows and upload them to slow.p
 The script can be run from the command line with the following arguments:
 
 ```
-usage: main.py [-h] [-t FILE_TYPE] [-n NUM_SHOWS] [-f NUM_FRAMES] [-e EPISODE]
+usage: extract_frame.py [-h] [-t FILE_TYPE] [-n NUM_SHOWS] [-f NUM_FRAMES] [-e EPISODE]
                folder_path
 
 Extracts images from TV shows and uploads them to slow.pics.
@@ -36,17 +36,17 @@ optional arguments:
 
 For example, to extract 1 image from a random episode of a TV show in the 'TV_shows' folder with the file type 'mkv', you would run the following command:
 ```
-python main.py TV_shows
+python extract_frame.py folder_path
 ```
 
 To extract 2 images from a random episode of a TV show in the 'TV_shows' folder with the file type 'avi', you would run the following command:
 ```
-python main.py TV_shows -t avi -n 2
+python extract_frame.py folder_path -t avi -n 2
 ```
 
 To extract 2 images from episode 5 of a TV show in the 'TV_shows' folder with the file type 'mkv', you would run the following command:
 ```
-python main.py TV_shows -e 5 -n 2
+python extract_frame.py folder_path -e 5 -n 2
 ```
 
 # Output
