@@ -49,7 +49,7 @@ def get_episode_number(filename):
         episode_number = episode_number_match.group(1)
     else:
         episode_number = 'NA'
-    return episode_number
+    return int(episode_number)
 
 
 def extract_frame(filepath, timecode=None, type='jpg'):
@@ -64,7 +64,16 @@ def extract_frame(filepath, timecode=None, type='jpg'):
     if timecode is None:
         timecode = round(random.uniform(0, clip.duration), 2)
     else:
-        timecode = cvsecs(timecode)
+        if "t=" in timecode:
+            timecode = timecode[2:]
+            timecode = cvsecs(timecode)
+        elif "f=" in timecode:
+            timecode = int(timecode[2:])
+            timecode = round(timecode / clip.fps, 2)
+        else:
+            print(f"Error: Invalid timecode format. Please use 't=' for duration or 'f=' for frame number.")
+            return
+
         if timecode <= clip.duration:
             timecode = cvsecs(timecode)
         else:
@@ -90,14 +99,14 @@ def main():
     parser.add_argument('-n', '--num_shows', default=1, help='The number of TV shows')
     parser.add_argument('-f', '--num_frames', default=1, help='The number of frames to extract from the same TV show')
     parser.add_argument('-e', '--episode', default=None, help='The episode number to extract images from')
-    parser.add_argument('-tc', '--timecode', default=None, help='The timecode to extract the frame')
+    parser.add_argument('-tc', '--timecode', help='The timecode of the frame to be extracted (e.g. t=00:23:15.15 for a duration or f=1150 for a frame)')
     args = parser.parse_args()
 
     folder_path = args.folder_path
     file_type = args.file_type
     num_shows = int(args.num_shows)
     num_frames = int(args.num_frames)
-    episode = args.episode
+    episode = int(args.episode)
     timecode = args.timecode
 
     if not os.path.exists(folder_path):

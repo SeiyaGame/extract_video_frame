@@ -27,7 +27,7 @@ optional arguments:
   -e EPISODE, --episode EPISODE
                         The episode number to extract images from
   -tc TIMECODE, --timecode TIMECODE
-                        The timecode to extract the frame
+                        The timecode of the frame to be extracted (e.g. t=00:23:15.15 for a duration or f=1150 for a frame)
 ```
 
 - The `folder_path` argument is required and should be the path of the folder containing the TV show files. 
@@ -37,17 +37,17 @@ optional arguments:
 - The `episode` argument is optional and defaults to None.
 - The `timecode` argument is optional and defaults to None. If not defined, a random frame is taken
 
-For example, to extract 1 image from a random episode of a TV show in the 'TV_shows' folder with the file type 'mkv', you would run the following command:
+For example, to extract 1 image from a random episode of a TV show in the 'folder_path' folder with the file type 'mkv', you would run the following command:
 ```
 python extract_frame.py folder_path
 ```
 
-To extract 2 images from a random episode of a TV show in the 'TV_shows' folder with the file type 'avi', you would run the following command:
+To extract 2 images from a random episode of a TV show in the 'folder_path' folder with the file type 'avi', you would run the following command:
 ```
 python extract_frame.py folder_path -t avi -n 2
 ```
 
-To extract 2 images from episode 5 of a TV show in the 'TV_shows' folder with the file type 'mkv', you would run the following command:
+To extract 2 images from episode 5 of a TV show in the 'folder_path' folder with the file type 'mkv', you would run the following command:
 ```
 python extract_frame.py folder_path -e 5 -n 2
 ```
