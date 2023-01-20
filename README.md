@@ -3,7 +3,21 @@ This script allows you to extract images from TV shows and upload them to slow.p
 
 ## Requirements
 - Python 3
-- moviepy library
+- ffmpeg-python
+- ffmpeg
+
+### Installing ffmpeg-python
+The latest version of ffmpeg-python can be acquired via a typical pip install:
+```
+pip install ffmpeg-python
+```
+
+### Installing ffmpeg
+
+There are a variety of ways to install FFmpeg, such as the [official download links](https://ffmpeg.org/download.html), or using your package manager of choice (e.g. `apt install ffmpeg` on Debian/Ubuntu, `brew install ffmpeg` on OS X, etc.).
+Otherwise you can put the binaries in the root of the project
+
+
 ## Usage
 The script can be run from the command line with the following arguments:
 

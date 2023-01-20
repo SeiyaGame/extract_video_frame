@@ -4,7 +4,8 @@ import os
 import random
 import re
 
-import moviepy.editor as mp
+# https://github.com/kkroening/ffmpeg-python/tree/master/examples
+import ffmpeg
 
 
 def cvsecs(time):
@@ -56,7 +57,7 @@ def get_episode_number(filename):
     return int(episode_number)
 
 
-def extract_frame(filepath, timecode=None, type='jpg'):
+def extract_frame(filepath, timecode=None, type='png'):
     filename, file_extension = os.path.splitext(os.path.basename(filepath))
     episode_number = get_episode_number(filename)
 
@@ -64,22 +65,25 @@ def extract_frame(filepath, timecode=None, type='jpg'):
         print(f"Error: Can't find episode number in the file name: {filename}")
         return
 
-    clip = mp.VideoFileClip(filepath)
+    probe = ffmpeg.probe(filepath)
+    video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'), None)
+    duration = cvsecs(video_stream['tags']['DURATION'])
+    fps = eval(video_stream['r_frame_rate'])
 
     if timecode is None:
-        timecode = round(random.uniform(0, clip.duration), 2)
+        timecode = round(random.uniform(0, duration), 2)
     else:
         if "t=" in timecode:
             timecode = timecode[2:]
             timecode = cvsecs(timecode)
         elif "f=" in timecode:
             timecode = int(timecode[2:])
-            timecode = round(timecode / clip.fps, 2)
+            timecode = round(timecode / fps, 2)
         else:
             print(f"Error: Invalid timecode format. Please use 't=' for duration or 'f=' for frame number.")
             return
 
-        if timecode <= clip.duration:
+        if timecode <= duration:
             timecode = cvsecs(timecode)
         else:
             print(f"Error: The timecode is not valid: {timecode}")
@@ -88,23 +92,33 @@ def extract_frame(filepath, timecode=None, type='jpg'):
     # Pas tres propre mais fonctionne :D
     td = datetime.timedelta(seconds=timecode)
     human_timecode = td.__str__().replace(':', '_')
-
     print(f"The timecode is: {td}")
 
-    output_path = f"{human_timecode}_{filename}-{episode_number}.{type}"
-    clip.save_frame(output_path, timecode)
-    clip.close()
+    output_path = f"{human_timecode}-{filename}-{episode_number}.{type}"
+
+    (
+        ffmpeg
+        .input(filepath, ss=timecode)
+        .output(output_path, vframes=1)
+        .overwrite_output()
+        .run_async(pipe_stdin=True, quiet=True)
+    )
+
     print("Frame extracted and saved to", output_path)
 
 
 def main():
     parser = argparse.ArgumentParser(description='Extracts images from TV shows and uploads them to slow.pics.')
     parser.add_argument('folder_path', help='The path of the folder containing the TV show files')
-    parser.add_argument('-t', '--file_type', default='mkv', type=str, help='The file type of the TV show files (e.g. mp4, avi, default: mkv)')
+    parser.add_argument('-t', '--file_type', default='mkv', type=str,
+                        help='The file type of the TV show files (e.g. mp4, avi, default: mkv)')
     parser.add_argument('-n', '--num_shows', default=1, type=int, help='The number of TV shows')
-    parser.add_argument('-f', '--num_frames', default=1, type=int, help='The number of frames to extract from the same TV show')
-    parser.add_argument('-e', '--episodes', nargs='+', type=int, help='A list of episode numbers to extract images from (e.g. 1 2 3)')
-    parser.add_argument('-tc', '--timecode', type=str, help='The timecode of the frame to be extracted (e.g. t=00:23:15.15 for a duration or f=1150 for a frame)')
+    parser.add_argument('-f', '--num_frames', default=1, type=int,
+                        help='The number of frames to extract from the same TV show')
+    parser.add_argument('-e', '--episodes', nargs='+', type=int,
+                        help='A list of episode numbers to extract images from (e.g. 1 2 3)')
+    parser.add_argument('-tc', '--timecode', type=str,
+                        help='The timecode of the frame to be extracted (e.g. t=00:23:15.15 for a duration or f=1150 for a frame)')
     args = parser.parse_args()
 
     folder_path = args.folder_path
@@ -128,7 +142,8 @@ def main():
         return
 
     if num_shows > len(files):
-        print(f"Error: The number of TV shows is greater than the number of available files. Maximum number of files: {len(files)}")
+        print(
+            f"Error: The number of TV shows is greater than the number of available files. Maximum number of files: {len(files)}")
         return
 
     if episodes:
