@@ -52,8 +52,8 @@ def get_episode_number(filename):
         if episode_number_match:
             episode_number = episode_number_match.group(2)
         else:
-            episode_number = 'NA'
-    return episode_number
+            return 'NA'
+    return int(episode_number)
 
 
 def extract_frame(filepath, timecode=None, type='jpg'):
@@ -129,6 +129,7 @@ def main():
         return
 
     if episode:
+
         # Filter the list of files to only include the specified episode
         files = [f for f in files if get_episode_number(f) == episode]
 
@@ -151,4 +152,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    
