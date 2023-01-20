@@ -58,7 +58,8 @@ def get_episode_number(filename):
 
 def extract_frame(filepath, timecode=None, type='jpg'):
     filename, file_extension = os.path.splitext(os.path.basename(filepath))
-    episode_number = get_episode_number(filepath)
+    episode_number = get_episode_number(filename)
+
     if episode_number == 'NA':
         print(f"Error: Can't find episode number in the file name: {filename}")
         return
