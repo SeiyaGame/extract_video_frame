@@ -48,8 +48,12 @@ def get_episode_number(filename):
     if episode_number_match:
         episode_number = episode_number_match.group(1)
     else:
-        episode_number = 'NA'
-    return int(episode_number)
+        episode_number_match = re.search(r"S(\d{1,3})E(\d{1,3})(?:[^\\/]*$)", filename, re.IGNORECASE)
+        if episode_number_match:
+            episode_number = episode_number_match.group(2)
+        else:
+            episode_number = 'NA'
+    return episode_number
 
 
 def extract_frame(filepath, timecode=None, type='jpg'):
@@ -147,3 +151,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+    
