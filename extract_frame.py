@@ -90,7 +90,7 @@ def extract_frame(filepath, timecode=None, type='jpg'):
 
     print(f"The timecode is: {td}")
 
-    output_path = f"{human_timecode}_{filename}-{human_timecode}-{episode_number}.{type}"
+    output_path = f"{human_timecode}_{filename}-{episode_number}.{type}"
     clip.save_frame(output_path, timecode)
     clip.close()
     print("Frame extracted and saved to", output_path)
