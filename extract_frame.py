@@ -99,19 +99,21 @@ def extract_frame(filepath, timecode=None, type='jpg'):
 def main():
     parser = argparse.ArgumentParser(description='Extracts images from TV shows and uploads them to slow.pics.')
     parser.add_argument('folder_path', help='The path of the folder containing the TV show files')
-    parser.add_argument('-t', '--file_type', default='mkv', help='The file type of the TV show files (e.g. mp4, avi, default: mkv)')
-    parser.add_argument('-n', '--num_shows', default=1, help='The number of TV shows')
-    parser.add_argument('-f', '--num_frames', default=1, help='The number of frames to extract from the same TV show')
-    parser.add_argument('-e', '--episode', default=None, help='The episode number to extract images from')
-    parser.add_argument('-tc', '--timecode', help='The timecode of the frame to be extracted (e.g. t=00:23:15.15 for a duration or f=1150 for a frame)')
+    parser.add_argument('-t', '--file_type', default='mkv', type=str, help='The file type of the TV show files (e.g. mp4, avi, default: mkv)')
+    parser.add_argument('-n', '--num_shows', default=1, type=int, help='The number of TV shows')
+    parser.add_argument('-f', '--num_frames', default=1, type=int, help='The number of frames to extract from the same TV show')
+    parser.add_argument('-e', '--episodes', nargs='+', type=int, help='A list of episode numbers to extract images from (e.g. 1 2 3)')
+    parser.add_argument('-tc', '--timecode', type=str, help='The timecode of the frame to be extracted (e.g. t=00:23:15.15 for a duration or f=1150 for a frame)')
     args = parser.parse_args()
 
     folder_path = args.folder_path
     file_type = args.file_type
-    num_shows = int(args.num_shows)
-    num_frames = int(args.num_frames)
-    episode = int(args.episode)
+    num_shows = args.num_shows
+    num_frames = args.num_frames
+    episodes = args.episodes
     timecode = args.timecode
+
+    print(args.episodes)
 
     if not os.path.exists(folder_path):
         print(f"Error: The folder path '{folder_path}' does not exist.")
@@ -128,13 +130,14 @@ def main():
         print(f"Error: The number of TV shows is greater than the number of available files. Maximum number of files: {len(files)}")
         return
 
-    if episode:
+    if episodes:
 
         # Filter the list of files to only include the specified episode
-        files = [f for f in files if get_episode_number(f) == episode]
+        files = [f for f in files if get_episode_number(f) in episodes]
+        num_shows = len(episodes)
 
         if len(files) == 0:
-            print(f"Error: No files found for episode {episode}")
+            print(f"Error: No files found for episodes: {episodes}")
             return
 
     for i in range(num_shows):

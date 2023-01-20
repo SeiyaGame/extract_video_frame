@@ -23,8 +23,8 @@ optional arguments:
                         The number of TV shows to extract images from
   -f NUM_FRAMES, --num_frames NUM_FRAMES
                         The number of frames to extract from the same TV show
-  -e EPISODE, --episode EPISODE
-                        The episode number to extract images from
+  -e EPISODES, --episodes EPISODES
+                        A list of episode numbers to extract images from (e.g. 1 2 3)
   -tc TIMECODE, --timecode TIMECODE
                         The timecode of the frame to be extracted (e.g. t=00:23:15.15 for a duration or f=1150 for a frame)
 ```
@@ -33,7 +33,7 @@ optional arguments:
 - The `file_type` argument is optional and defaults to 'mkv'. 
 - The `num_shows` argument is optional and defaults to 1. 
 - The `num_frames` argument is optional and defaults to 1. 
-- The `episode` argument is optional and defaults to None.
+- The `episodes` argument is optional and defaults to None.
 - The `timecode` argument is optional and defaults to None. If not defined, a random frame is taken
 
 For example, to extract 1 image from a random episode of a TV show in the 'folder_path' folder with the file type 'mkv', you would run the following command:
