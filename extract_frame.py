@@ -1,5 +1,6 @@
 import argparse
 import datetime
+import json
 import os
 import random
 import re
@@ -67,7 +68,9 @@ def extract_frame(filepath, timecode=None, type='png'):
 
     probe = ffmpeg.probe(filepath)
     video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'), None)
-    duration = cvsecs(video_stream['tags']['DURATION'])
+    probe_format = probe['format']
+
+    duration = cvsecs(probe_format['duration'])
     fps = eval(video_stream['r_frame_rate'])
 
     if timecode is None:
@@ -127,8 +130,6 @@ def main():
     num_frames = args.num_frames
     episodes = args.episodes
     timecode = args.timecode
-
-    print(args.episodes)
 
     if not os.path.exists(folder_path):
         print(f"Error: The folder path '{folder_path}' does not exist.")
