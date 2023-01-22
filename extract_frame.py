@@ -44,7 +44,7 @@ def cvsecs(time):
 
 def get_episode_number(filename):
     # https://regex101.com/r/AEUCmV/1 and https://forum.kodi.tv/showthread.php?tid=51614&page=25
-    episode_number_match = re.search(r"(?:(?:\b|_)(?:ep?[ .]?)?(\d{2,3})(-\d{2,3})?(?:[_ ]?v\d)?[\s_.-]+)", filename,
+    episode_number_match = re.search(r"(?:(?:\b|_)(?:ep?[ .]?)?(\d{2,3})(-\d{2,3})?(?:[_ ]?v\d)?[\s_.]+)", filename,
                                      re.IGNORECASE)
     if episode_number_match:
         episode_number = episode_number_match.group(1)
@@ -150,7 +150,7 @@ def main():
 
         # Filter the list of files to only include the specified episode
         files = [f for f in files if get_episode_number(f) in episodes]
-        num_shows = len(episodes)
+        num_shows = len(files)
 
         if len(files) == 0:
             print(f"Error: No files found for episodes: {episodes}")
