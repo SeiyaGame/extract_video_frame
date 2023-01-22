@@ -8,6 +8,7 @@ import re
 import ffmpeg
 
 
+# Convert all timecode formats to seconds
 def cvsecs(time):
     """ Will convert any time into seconds.
 
@@ -57,21 +58,22 @@ def get_episode_number(filename):
     return int(episode_number)
 
 
-def extract_frame(filepath, timecode=None, type='png'):
-    filename, file_extension = os.path.splitext(os.path.basename(filepath))
-    episode_number = get_episode_number(filename)
+# Return only episodes files wanted
+def get_episode_file(episodes, files):
+    missing_episodes = set(episodes) - set(get_episode_number(f) for f in files)
+    if missing_episodes:
+        missing_episodes = [str(ep) for ep in missing_episodes]
+        print(f"Episodes {', '.join(missing_episodes)} not found in the list of files.")
+    return [f for f in files if get_episode_number(f) in episodes]
 
-    if episode_number == 'NA':
-        print(f"Error: Can't find episode number in the file name: {filename}")
-        return
 
-    probe = ffmpeg.probe(filepath)
-    video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'), None)
-    probe_format = probe['format']
+def get_all_episodes(files):
+    episodes = set(get_episode_number(f) for f in files if get_episode_number(f) != "NA")
+    return [f for f in files if get_episode_number(f) in episodes]
 
-    duration = cvsecs(probe_format['duration'])
-    fps = eval(video_stream['r_frame_rate'])
 
+# Return timecode in seconds
+def get_timecode_secs(duration, fps, timecode=None):
     if timecode is None:
         timecode = round(random.uniform(0, duration), 2)
     else:
@@ -83,90 +85,138 @@ def extract_frame(filepath, timecode=None, type='png'):
             timecode = round(timecode / fps, 2)
         else:
             print(f"Error: Invalid timecode format. Please use 't=' for duration or 'f=' for frame number.")
-            return
+            exit(0)
 
         if timecode <= duration:
             timecode = cvsecs(timecode)
         else:
             print(f"Error: The timecode is not valid: {timecode}")
-            return
+            exit(0)
 
-    # Pas tres propre mais fonctionne :D
+    return timecode
+
+
+# Return duration and FPS of shows
+def extract_show_info(filepath):
+    probe = ffmpeg.probe(filepath)
+    video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'), None)
+    probe_format = probe['format']
+
+    duration = cvsecs(probe_format['duration'])
+    fps = eval(video_stream['r_frame_rate'])
+
+    return duration, fps
+
+
+# Return a list of files
+def get_files_source(filepath, file_type):
+    files = []
+
+    # Get a list of all files in the folder with the specified file type
+    if os.path.isdir(filepath):
+        files = [f for f in os.listdir(filepath) if f.endswith(file_type)]
+    elif os.path.isfile(filepath) and filepath.endswith(file_type):
+        files.append(filepath)
+
+    return files
+
+
+def extract_frame(filepath, timecode, output_dir, file_type="png"):
+    filename, file_extension = os.path.splitext(os.path.basename(filepath))
+    episode_number = get_episode_number(filename)
+
+    if episode_number == 'NA':
+        print(f"Error: Can't find episode number in the file name: {filename}")
+        return
+
+    # Pas trs propre mais fonctionne :D
     td = datetime.timedelta(seconds=timecode)
     human_timecode = td.__str__().replace(':', '_')
     print(f"The timecode is: {td}")
 
-    output_path = f"{human_timecode}-{filename}-{episode_number}.{type}"
+    path_name = f"{human_timecode}-{filename}-{episode_number}.{file_type}"
+
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    output_path = os.path.join(output_dir, path_name)
 
     (
         ffmpeg
         .input(filepath, ss=timecode)
         .output(output_path, vframes=1)
         .overwrite_output()
-        .run_async(pipe_stdin=True, quiet=True)
+        # .run_async(pipe_stdin=True, quiet=True)
+        .run(quiet=True)
     )
 
     print("Frame extracted and saved to", output_path)
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Extracts images from TV shows and uploads them to slow.pics.')
-    parser.add_argument('folder_path', help='The path of the folder containing the TV show files')
+    parser = argparse.ArgumentParser(
+        description='Extracts images from TV shows and uploads them to slow.pics.(In the future)')
+    parser.add_argument('sourceA', type=str,
+                        help='The path of the folder/file containing the TV show files of the first source')
+    parser.add_argument('sourceB', type=str,
+                        help='The path of the folder/file containing the TV show files of the second source')
     parser.add_argument('-t', '--file_type', default='mkv', type=str,
                         help='The file type of the TV show files (e.g. mp4, avi, default: mkv)')
-    parser.add_argument('-n', '--num_shows', default=1, type=int, help='The number of TV shows')
-    parser.add_argument('-f', '--num_frames', default=1, type=int,
-                        help='The number of frames to extract from the same TV show')
-    parser.add_argument('-e', '--episodes', nargs='+', type=int,
-                        help='A list of episode numbers to extract images from (e.g. 1 2 3)')
-    parser.add_argument('-tc', '--timecode', type=str,
-                        help='The timecode of the frame to be extracted (e.g. t=00:23:15.15 for a duration or f=1150 for a frame)')
+    parser.add_argument('-e', '--episodes', nargs='+', default=None, type=int,
+                        help='A list of episode numbers to extract images from (e.g. 1 2 3) (Default: All)')
     args = parser.parse_args()
 
-    folder_path = args.folder_path
-    file_type = args.file_type
-    num_shows = args.num_shows
-    num_frames = args.num_frames
-    episodes = args.episodes
-    timecode = args.timecode
+    sourceA, sourceB = args.sourceA, args.sourceB
 
-    if not os.path.exists(folder_path):
-        print(f"Error: The folder path '{folder_path}' does not exist.")
+    file_type = args.file_type
+    episodes = args.episodes
+
+    for source in [sourceA, sourceB]:
+        if not os.path.exists(source):
+            print(f"Error: The folder/file path '{source}' does not exist.")
+            return
+
+    if sourceA == sourceB:
+        print("The path of source A cannot be the same as that of source B !")
         return
 
     # Get a list of all files in the folder with the specified file type
-    files = [f for f in os.listdir(folder_path) if f.endswith(file_type)]
-
-    if len(files) == 0:
-        print(f"Error: No files with the type '{file_type}' found in the folder '{folder_path}'.")
-        return
-
-    if num_shows > len(files):
-        print(
-            f"Error: The number of TV shows is greater than the number of available files. Maximum number of files: {len(files)}")
-        return
+    sourceA_files, sourceB_files = get_files_source(sourceA, file_type), get_files_source(sourceB, file_type)
 
     if episodes:
-
         # Filter the list of files to only include the specified episode
-        files = [f for f in files if get_episode_number(f) in episodes]
-        num_shows = len(files)
+        sourceA_files, sourceB_files = get_episode_file(episodes, sourceA_files), get_episode_file(episodes,
+                                                                                                   sourceB_files)
+    else:
+        sourceA_files, sourceB_files = get_all_episodes(sourceA_files), get_all_episodes(sourceB_files)
 
-        if len(files) == 0:
-            print(f"Error: No files found for episodes: {episodes}")
-            return
+    if len(sourceA_files) != len(sourceB_files):
+        print("Error: source A and source B do not contain the same number of files !")
+        return
 
-    for i in range(num_shows):
-        # Choose a random file from the list
-        chosen_file = random.choice(files)
-        filepath = os.path.join(folder_path, chosen_file)
+    for i, j in zip(sourceA_files, sourceB_files):
 
-        for j in range(num_frames):
-            # Call the extract_frame function on the chosen file
-            extract_frame(filepath, timecode)
+        filepath_sourceA, filepath_sourceB = os.path.join(sourceA, i), os.path.join(sourceB, j)
 
-        # Remove the chosen file from the list to avoid choosing it again
-        files.remove(chosen_file)
+        duration_sourceA, fps_sourceA = extract_show_info(filepath_sourceA)
+        duration_sourceB, fps_sourceB = extract_show_info(filepath_sourceB)
+
+        if duration_sourceA != duration_sourceB or fps_sourceA != fps_sourceB:
+            print(f"WARNING: {i} and {j} do not have the same duration and fps !")
+            # print(f"duration_sourceA: {duration_sourceA}, duration_sourceB: {duration_sourceB}")
+            # print(f"fps_sourceA: {fps_sourceA}, fps_sourceB: {fps_sourceB}")
+
+        timecode = get_timecode_secs(duration_sourceA, fps_sourceA)
+
+        output_dirA, output_dirB = "sourceA", "sourceB"
+        if len(sourceA_files) == 1 and len(sourceB_files) == 1:
+            output_dirA, output_dirB = os.path.abspath("./"), os.path.abspath("./")
+
+        # Call the extract_frame function on the chosen file
+        extract_frame(filepath_sourceA, timecode, output_dirA)
+        extract_frame(filepath_sourceB, timecode, output_dirB)
+
+    print("Finished extracting images.")
 
 
 if __name__ == '__main__':
