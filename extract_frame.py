@@ -129,10 +129,8 @@ def extract_frame(filepath, timecode, output_dir, file_type="png"):
         print(f"Error: Can't find episode number in the file name: {filename}")
         return
 
-    # Pas trs propre mais fonctionne :D
     td = datetime.timedelta(seconds=timecode)
     human_timecode = td.__str__().replace(':', '_')
-    print(f"The timecode is: {td}")
 
     path_name = f"{human_timecode}-{filename}-{episode_number}.{file_type}"
 
@@ -146,11 +144,11 @@ def extract_frame(filepath, timecode, output_dir, file_type="png"):
         .input(filepath, ss=timecode)
         .output(output_path, vframes=1)
         .overwrite_output()
-        # .run_async(pipe_stdin=True, quiet=True)
-        .run(quiet=True)
+        .run_async(pipe_stdin=True, quiet=True)
+        # .run(quiet=True)
     )
 
-    print("Frame extracted and saved to", output_path)
+    print(f"Frame extracted (Timecode: {td}) and saved to '{output_path}'")
 
 
 def main():
@@ -164,10 +162,13 @@ def main():
                         help='The file type of the TV show files (e.g. mp4, avi, default: mkv)')
     parser.add_argument('-e', '--episodes', nargs='+', default=None, type=int,
                         help='A list of episode numbers to extract images from (e.g. 1 2 3) (Default: All)')
+    parser.add_argument('--num_frames', default=1, type=int,
+                        help='The number of frames to extract from the same TV show')
     args = parser.parse_args()
 
     sourceA, sourceB = args.sourceA, args.sourceB
 
+    num_frames = args.num_frames
     file_type = args.file_type
     episodes = args.episodes
 
@@ -197,26 +198,27 @@ def main():
         return
 
     for i, j in zip(sourceA_files, sourceB_files):
+        for f in range(num_frames):
+            filepath_sourceA, filepath_sourceB = os.path.join(sourceA, i), os.path.join(sourceB, j)
 
-        filepath_sourceA, filepath_sourceB = os.path.join(sourceA, i), os.path.join(sourceB, j)
+            duration_sourceA, fps_sourceA = extract_show_info(filepath_sourceA)
+            duration_sourceB, fps_sourceB = extract_show_info(filepath_sourceB)
 
-        duration_sourceA, fps_sourceA = extract_show_info(filepath_sourceA)
-        duration_sourceB, fps_sourceB = extract_show_info(filepath_sourceB)
+            if duration_sourceA != duration_sourceB or fps_sourceA != fps_sourceB:
+                print(f"[WARNING] '{i}' and '{j}' do not have the same duration and/or fps !")
+                # print(f"duration_sourceA: {duration_sourceA}, duration_sourceB: {duration_sourceB}")
+                # print(f"fps_sourceA: {fps_sourceA}, fps_sourceB: {fps_sourceB}")
 
-        if duration_sourceA != duration_sourceB or fps_sourceA != fps_sourceB:
-            print(f"WARNING: {i} and {j} do not have the same duration and fps !")
-            # print(f"duration_sourceA: {duration_sourceA}, duration_sourceB: {duration_sourceB}")
-            # print(f"fps_sourceA: {fps_sourceA}, fps_sourceB: {fps_sourceB}")
+            timecode = get_timecode_secs(duration_sourceA, fps_sourceA)
 
-        timecode = get_timecode_secs(duration_sourceA, fps_sourceA)
+            output_dirA, output_dirB = os.path.abspath("sourceA"), os.path.abspath("sourceB")
+            if len(sourceA_files) == 1 and len(sourceB_files) == 1:
+                output_dirA, output_dirB = os.path.abspath("./"), os.path.abspath("./")
 
-        output_dirA, output_dirB = "sourceA", "sourceB"
-        if len(sourceA_files) == 1 and len(sourceB_files) == 1:
-            output_dirA, output_dirB = os.path.abspath("./"), os.path.abspath("./")
-
-        # Call the extract_frame function on the chosen file
-        extract_frame(filepath_sourceA, timecode, output_dirA)
-        extract_frame(filepath_sourceB, timecode, output_dirB)
+            # Call the extract_frame function on the chosen file
+            extract_frame(filepath_sourceA, timecode, output_dirA)
+            extract_frame(filepath_sourceB, timecode, output_dirB)
+            print("\n")
 
     print("Finished extracting images.")
 

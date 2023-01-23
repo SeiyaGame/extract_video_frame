@@ -36,12 +36,15 @@ options:
                         The file type of the TV show files (e.g. mp4, avi, default: mkv)
   -e EPISODES [EPISODES ...], --episodes EPISODES [EPISODES ...]
                         A list of episode numbers to extract images from (e.g. 1 2 3) (Default: All)
+  --num_frames NUM_FRAMES
+                        The number of frames to extract from the same TV show
 ```
 
 - The `sourceA` argument is required and should be the path of the folder/files containing the TV show files of the first source.
 - The `sourceB` argument is required and should be the path of the folder/files containing the TV show files of the second source. 
 - The `file_type` argument is optional and defaults to 'mkv'.
 - The `episodes` argument is optional and defaults to None.
+- The `num_frames` argument is optional and defaults to 1.
 
 For example, to extract 1 image from a random episode of a TV show in the 'folder_path' folder with the file type 'mkv', you would run the following command:
 ```
@@ -51,6 +54,11 @@ python extract_frame.py sourceA sourceB
 To extract 1 images from episode 5,6,7,9 of a TV show with the file type 'mkv', you would run the following command:
 ```
 python extract_frame.py folder_path sourceA sourceB -e 5 6 7 9
+```
+
+To extract 3 images from episode 5,6,7,9 of a TV show with the file type 'mkv', you would run the following command:
+```
+python extract_frame.py folder_path sourceA sourceB -e 5 6 7 9 --num_frames 3
 ```
 
 # Output
