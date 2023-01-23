@@ -190,8 +190,10 @@ def main():
     else:
         sourceA_files, sourceB_files = get_all_episodes(sourceA_files), get_all_episodes(sourceB_files)
 
+    # print(f"sourceA_files: {len(sourceA_files)}")
+    # print(f"sourceB_files: {len(sourceB_files)}")
     if len(sourceA_files) != len(sourceB_files):
-        print("Error: source A and source B do not contain the same number of files !")
+        print(f"Error: source A({len(sourceA_files)}) and source B({len(sourceB_files)}) do not contain the same number of files ! Use the --episodes")
         return
 
     for i, j in zip(sourceA_files, sourceB_files):
