@@ -1,6 +1,7 @@
 import argparse
 import datetime
 import os
+import pathlib
 import random
 import re
 
@@ -108,13 +109,12 @@ def extract_show_info(filepath):
     return duration, fps
 
 
-# Return a list of files
+# Return a list of files with specify file_type
 def get_files_source(filepath, file_type):
     files = []
-
     # Get a list of all files in the folder with the specified file type
     if os.path.isdir(filepath):
-        files = [f for f in os.listdir(filepath) if f.endswith(file_type)]
+        files = [str(file) for file in list(pathlib.Path(filepath).rglob(f"*.{file_type}"))]
     elif os.path.isfile(filepath) and filepath.endswith(file_type):
         files.append(filepath)
 
