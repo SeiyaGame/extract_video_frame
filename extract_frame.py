@@ -4,6 +4,7 @@ import os
 import pathlib
 import random
 import re
+from itertools import zip_longest
 
 # https://github.com/kkroening/ffmpeg-python/tree/master/examples
 import ffmpeg
@@ -61,16 +62,16 @@ def get_episode_number(filename):
 
 # Return only episodes files wanted
 def get_episode_file(episodes, files):
-    missing_episodes = set(episodes) - set(get_episode_number(f) for f in files)
+    missing_episodes = set(episodes) - set(get_episode_number(os.path.basename(f)) for f in files)
     if missing_episodes:
         missing_episodes = [str(ep) for ep in missing_episodes]
         print(f"Episodes {', '.join(missing_episodes)} not found in the list of files.")
-    return [f for f in files if get_episode_number(f) in episodes]
+    return [f for f in files if get_episode_number(os.path.basename(f)) in episodes]
 
 
 def get_all_episodes(files):
-    episodes = set(get_episode_number(f) for f in files if get_episode_number(f) != "NA")
-    return [f for f in files if get_episode_number(f) in episodes]
+    episodes = set(get_episode_number(os.path.basename(f)) for f in files if get_episode_number(os.path.basename(f)) != "NA")
+    return [f for f in files if get_episode_number(os.path.basename(f)) in episodes]
 
 
 # Return timecode in seconds
@@ -145,7 +146,6 @@ def extract_frame(filepath, timecode, output_dir, file_type="png"):
         .output(output_path, vframes=1)
         .overwrite_output()
         .run_async(pipe_stdin=True, quiet=True)
-        # .run(quiet=True)
     )
 
     print(f"Frame extracted (Timecode: {td}) and saved to '{output_path}'")
@@ -154,10 +154,10 @@ def extract_frame(filepath, timecode, output_dir, file_type="png"):
 def main():
     parser = argparse.ArgumentParser(
         description='Extracts images from TV shows and uploads them to slow.pics.(In the future)')
-    parser.add_argument('sourceA', type=str,
-                        help='The path of the folder/file containing the TV show files of the first source')
-    parser.add_argument('sourceB', type=str,
-                        help='The path of the folder/file containing the TV show files of the second source')
+    parser.add_argument('source', type=str,
+                        help='The path of the folder/file containing the TV show files')
+    parser.add_argument('-c', '--comparisons_source', type=str, nargs='+', default=list(),
+                        help='The path of the folder/file containing the TV show files you want to compare')
     parser.add_argument('-t', '--file_type', default='mkv', type=str,
                         help='The file type of the TV show files (e.g. mp4, avi, default: mkv)')
     parser.add_argument('-e', '--episodes', nargs='+', default=None, type=int,
@@ -166,59 +166,61 @@ def main():
                         help='The number of frames to extract from the same TV show')
     args = parser.parse_args()
 
-    sourceA, sourceB = args.sourceA, args.sourceB
-
+    source = args.source
+    comparisons = args.comparisons_source
     num_frames = args.num_frames
     file_type = args.file_type
     episodes = args.episodes
 
-    for source in [sourceA, sourceB]:
-        if not os.path.exists(source):
-            print(f"Error: The folder/file path '{source}' does not exist.")
+    if not os.path.exists(source):
+        print(f"Error: The folder/file path '{source}' does not exist.")
+        return
+    for comparison in comparisons:
+        if not os.path.exists(comparison):
+            print(f"Error: The folder/file path '{comparison}' does not exist.")
+            return
+        if comparison == source:
+            print("The path of source cannot be the same as that of comparison !")
             return
 
-    if sourceA == sourceB:
-        print("The path of source A cannot be the same as that of source B !")
-        return
-
     # Get a list of all files in the folder with the specified file type
-    sourceA_files, sourceB_files = get_files_source(sourceA, file_type), get_files_source(sourceB, file_type)
+    source_path = get_files_source(source, file_type)
+    comparison_paths = [get_files_source(comparison, file_type) for comparison in comparisons]
 
     if episodes:
         # Filter the list of files to only include the specified episode
-        sourceA_files, sourceB_files = get_episode_file(episodes, sourceA_files), get_episode_file(episodes,
-                                                                                                   sourceB_files)
+        source_files = get_episode_file(episodes, source_path)
+        comparison_files = [get_episode_file(episodes, comparison) for comparison in comparison_paths]
+
     else:
-        sourceA_files, sourceB_files = get_all_episodes(sourceA_files), get_all_episodes(sourceB_files)
+        # Get all episodes TODO: Need to improve that to take in account the movies
+        source_files = get_all_episodes(source_path)
+        comparison_files = [get_all_episodes(comparison) for comparison in comparison_paths]
 
-    # print(f"sourceA_files: {len(sourceA_files)}")
-    # print(f"sourceB_files: {len(sourceB_files)}")
-    if len(sourceA_files) != len(sourceB_files):
-        print(f"Error: source A({len(sourceA_files)}) and source B({len(sourceB_files)}) do not contain the same number of files ! Use the --episodes")
-        return
+    for i, comparison_file in enumerate(comparison_files):
+        if len(source_files) != len(comparison_file):
+            print(f"Error: The source({len(source_files)}) and comparison {i}({len(comparison_file)}) do not contain the same number of files ! Use the --episodes instead of !?")
+            return
 
-    for i, j in zip(sourceA_files, sourceB_files):
+    for i, source_file in enumerate(source_files):
         for f in range(num_frames):
-            filepath_sourceA, filepath_sourceB = os.path.join(sourceA, i), os.path.join(sourceB, j)
 
-            duration_sourceA, fps_sourceA = extract_show_info(filepath_sourceA)
-            duration_sourceB, fps_sourceB = extract_show_info(filepath_sourceB)
+            output_dir = os.path.abspath("./")
+            duration_src, fps_src = extract_show_info(source_file)
+            timecode = get_timecode_secs(duration_src, fps_src)
 
-            if duration_sourceA != duration_sourceB or fps_sourceA != fps_sourceB:
-                print(f"[WARNING] '{i}' and '{j}' do not have the same duration and/or fps !")
-                # print(f"duration_sourceA: {duration_sourceA}, duration_sourceB: {duration_sourceB}")
-                # print(f"fps_sourceA: {fps_sourceA}, fps_sourceB: {fps_sourceB}")
+            extract_frame(source_file, timecode, output_dir)
 
-            timecode = get_timecode_secs(duration_sourceA, fps_sourceA)
+            # Compare source frame with comparison files
+            for files in comparison_files:
 
-            output_dirA, output_dirB = os.path.abspath("sourceA"), os.path.abspath("sourceB")
-            if len(sourceA_files) == 1 and len(sourceB_files) == 1:
-                output_dirA, output_dirB = os.path.abspath("./"), os.path.abspath("./")
+                # Not necessary ?!
+                # duration_cf, fps_cf = extract_show_info(files[i])
+                # if duration_cf != duration_src or fps_cf != fps_src:
+                #     print(f"[WARNING] '{os.path.basename(source_file)}' and '{os.path.basename(files[i])}' do not have the same duration and/or fps !")
 
-            # Call the extract_frame function on the chosen file
-            extract_frame(filepath_sourceA, timecode, output_dirA)
-            extract_frame(filepath_sourceB, timecode, output_dirB)
-            print("\n")
+                extract_frame(files[i], timecode, output_dir)
+            print()
 
     print("Finished extracting images.")
 

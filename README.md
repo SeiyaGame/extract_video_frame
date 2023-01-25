@@ -22,16 +22,17 @@ Otherwise you can put the binaries in the root of the project
 The script can be run from the command line with the following arguments:
 
 ```
-usage: extract_frame.py [-h] [-t FILE_TYPE] [-e EPISODES [EPISODES ...]] sourceA sourceB
+usage: extract_frame.py [-h] [-c COMPARISONS_SOURCE [COMPARISONS_SOURCE ...]] [-t FILE_TYPE] [-e EPISODES [EPISODES ...]] [--num_frames NUM_FRAMES] source
 
 Extracts images from TV shows and uploads them to slow.pics.(In the future)
 
 positional arguments:
-  sourceA               The path of the folder/file containing the TV show files of the first source
-  sourceB               The path of the folder/file containing the TV show files of the second source
+  source                The path of the folder/file containing the TV show files
 
 options:
   -h, --help            show this help message and exit
+  -c COMPARISONS_SOURCE [COMPARISONS_SOURCE ...], --comparisons_source COMPARISONS_SOURCE [COMPARISONS_SOURCE ...]
+                        The path of the folder/file containing the TV show files you want to compare
   -t FILE_TYPE, --file_type FILE_TYPE
                         The file type of the TV show files (e.g. mp4, avi, default: mkv)
   -e EPISODES [EPISODES ...], --episodes EPISODES [EPISODES ...]
@@ -40,25 +41,25 @@ options:
                         The number of frames to extract from the same TV show
 ```
 
-- The `sourceA` argument is required and should be the path of the folder/files containing the TV show files of the first source.
-- The `sourceB` argument is required and should be the path of the folder/files containing the TV show files of the second source. 
+- The `source` argument is required and should be the path of the folder/files containing the TV show files of the first source.
+- The `comparisons_source` argument is optional and should be the path of the folder/files containing the TV show files you want to compare. 
 - The `file_type` argument is optional and defaults to 'mkv'.
 - The `episodes` argument is optional and defaults to None.
 - The `num_frames` argument is optional and defaults to 1.
 
 For example, to extract 1 image from a random episode of a TV show in the 'folder_path' folder with the file type 'mkv', you would run the following command:
 ```
-python extract_frame.py sourceA sourceB
+python extract_frame.py folder_path
 ```
 
-To extract 1 images from episode 5,6,7,9 of a TV show with the file type 'mkv', you would run the following command:
+To extract 1 images from episode 5,6,7,9 of a TV show with the file type 'mkv' and with one comparison, you would run the following command:
 ```
-python extract_frame.py folder_path sourceA sourceB -e 5 6 7 9
+python extract_frame.py folder_path -c folder_comparison -e 5 6 7 9
 ```
 
-To extract 3 images from episode 5,6,7,9 of a TV show with the file type 'mkv', you would run the following command:
+To extract 3 images from episode 5,6,7,9 of a TV show with the file type 'mkv' and with one comparison, you would run the following command:
 ```
-python extract_frame.py folder_path sourceA sourceB -e 5 6 7 9 --num_frames 3
+python extract_frame.py folder_path -c folder_comparison -e 5 6 7 9 --num_frames 3
 ```
 
 # Output
