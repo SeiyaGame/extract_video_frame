@@ -46,15 +46,15 @@ def cvsecs(time):
 
 
 def get_episode_number(filename):
-    # https://regex101.com/r/AEUCmV/1 and https://forum.kodi.tv/showthread.php?tid=51614&page=25
-    episode_number_match = re.search(r"(?:(?:\b|_)(?:ep?[ .]?)?(\d{2,3})(-\d{2,3})?(?:[_ ]?v\d)?[\s_.]+)", filename,
-                                     re.IGNORECASE)
+    episode_number_match = re.search(r"S(\d{1,3})E(\d{1,3})(?:[^\\/]*$)", filename, re.IGNORECASE)
     if episode_number_match:
-        episode_number = episode_number_match.group(1)
+        episode_number = episode_number_match.group(2)
     else:
-        episode_number_match = re.search(r"S(\d{1,3})E(\d{1,3})(?:[^\\/]*$)", filename, re.IGNORECASE)
+        # Based on https://forum.kodi.tv/showthread.php?tid=51614&page=25
+        # This regex expression can lead to errors, no fix for the moment
+        episode_number_match = re.search(r"(?:(?:\b|_)(?:ep?[ .]?)?(\d{2,3})(-\d{2,3})?(?:[_ ]?v\d)?[\s_.]+)", filename, re.IGNORECASE)
         if episode_number_match:
-            episode_number = episode_number_match.group(2)
+            episode_number = episode_number_match.group(1)
         else:
             return 'NA'
     return int(episode_number)
@@ -160,7 +160,7 @@ def main():
                         help='The path of the folder/file containing the TV show files you want to compare')
     parser.add_argument('-t', '--file_type', default='mkv', type=str,
                         help='The file type of the TV show files (e.g. mp4, avi, default: mkv)')
-    parser.add_argument('-e', '--episodes', nargs='+', default=None, type=int,
+    parser.add_argument('-e', '--episodes', nargs='*', default=None, type=int,
                         help='A list of episode numbers to extract images from (e.g. 1 2 3) (Default: All)')
     parser.add_argument('--num_frames', default=1, type=int,
                         help='The number of frames to extract from the same TV show')
