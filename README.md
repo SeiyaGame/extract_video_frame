@@ -63,7 +63,7 @@ python extract_frame.py folder_path -c folder_comparison -e 5 6 7 9 --num_frames
 ```
 
 # Output
-The script will extract the specified number of images from the TV show and save them in the same folder as the script with the format `{human_timecode}_{filename}-{episode_number}.{type}.png`. 
+The script will extract the specified number of images from the TV show and save them in the same folder as the script with the format `{human_timecode}_{filename}-{episode_number}.png`. 
 The timecode of the extracted image is selected randomly for the moment.
 
 # Note
