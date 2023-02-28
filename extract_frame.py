@@ -4,7 +4,6 @@ import os
 import pathlib
 import random
 import re
-from itertools import zip_longest
 
 # https://github.com/kkroening/ffmpeg-python/tree/master/examples
 import ffmpeg
@@ -52,7 +51,8 @@ def get_episode_number(filename):
     else:
         # Based on https://forum.kodi.tv/showthread.php?tid=51614&page=25
         # This regex expression can lead to errors, no fix for the moment
-        episode_number_match = re.search(r"(?:(?:\b|_)(?:ep?[ .]?)?(\d{2,3})(-\d{2,3})?(?:[_ ]?v\d)?[\s_.]+)", filename, re.IGNORECASE)
+        episode_number_match = re.search(r"(?:(?:\b|_)(?:ep?[ .]?)?(\d{2,3})(-\d{2,3})?(?:[_ ]?v\d)?[\s_.]+)",
+                                         filename, re.IGNORECASE)
         if episode_number_match:
             episode_number = episode_number_match.group(1)
         else:
@@ -75,23 +75,12 @@ def get_all_episodes(files):
 
 
 # Return timecode in seconds
-def get_timecode_secs(duration, fps, timecode=None):
+def get_timecode_in_secs(duration, timecode=None):
     if timecode is None:
         timecode = round(random.uniform(0, duration), 2)
     else:
-        if "t=" in timecode:
-            timecode = timecode[2:]
-            timecode = cvsecs(timecode)
-        elif "f=" in timecode:
-            timecode = int(timecode[2:])
-            timecode = round(timecode / fps, 2)
-        else:
-            print(f"Error: Invalid timecode format. Please use 't=' for duration or 'f=' for frame number.")
-            exit(0)
-
-        if timecode <= duration:
-            timecode = cvsecs(timecode)
-        else:
+        timecode = cvsecs(timecode)
+        if timecode >= duration:
             print(f"Error: The timecode is not valid: {timecode}")
             exit(0)
 
@@ -207,13 +196,12 @@ def main():
 
             output_dir = os.path.abspath("./")
             duration_src, fps_src = extract_show_info(source_file)
-            timecode = get_timecode_secs(duration_src, fps_src)
+            timecode = get_timecode_in_secs(duration_src)
 
             extract_frame(source_file, timecode, output_dir)
 
             # Compare source frame with comparison files
             for files in comparison_files:
-
                 # Not necessary ?!
                 # duration_cf, fps_cf = extract_show_info(files[i])
                 # if duration_cf != duration_src or fps_cf != fps_src:
@@ -227,3 +215,52 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+    # file_1 = "S:\\downloads\\torrents\\others\\Hundred.S01.SUBFRENCH.1080p.WEB.x264-UwU\\Hundred.S01E08.SUBFRENCH.1080p.WEB.x264-UwU\\Hundred.S01E08.SUBFRENCH.1080p.WEB.x264-UwU.mkv"
+    # file_2 = "S:\\downloads\\torrents\\others\\Hundred_(2016)_(BD_1080p_Hi10_FLAC)_[Dual-Audio]_[Rasetsu]\\[RASETSU]_Hundred_-_08_(BD_1080p_Hi10_FLACx2)_[C102A58D].mkv"
+    #
+    # frame_to_analyse = 1432
+    # result = list()
+    #
+    # probe = ffmpeg.probe(file_1)
+    #
+    # video_info = next(s for s in probe['streams'] if s['codec_type'] == 'video')
+    # width = int(video_info['width'])
+    # height = int(video_info['height'])
+    # num_frames = int(eval(video_info['r_frame_rate']))
+    #
+    # for file in [file_1, file_2]:
+    #     out, _ = (
+    #         ffmpeg
+    #         .input(file_1)
+    #         .filter('select', 'gte(n,{})'.format(frame_to_analyse))
+    #         .output('pipe:', format='rawvideo', pix_fmt='rgb24', vframes=1)
+    #         .run(capture_stdout=True, capture_stderr=True)
+    #     )
+    #     result.append(np.frombuffer(out, np.uint8).reshape([height, width, 3]))
+    #
+    # if np.array_equal(result[0], result[1]):
+    #     print("The two frames are equals !")
+    # else:
+    #     print("The two frames are not equals !")
+    #
+    # # Extract Frame to see the diff or not
+    # for i, file in enumerate([file_1, file_2]):
+    #     # A utiliser ?!!
+    #     (
+    #         ffmpeg
+    #         .input(file_1)
+    #         .filter('select', 'gte(n,{})'.format(frame_to_analyse))
+    #         .output(f'frame_gte_{i}.png', vframes=1)
+    #         .overwrite_output()
+    #         .run(quiet=True)
+    #     )
+    #
+    #     # Moins précis à cause de la convertion ??!!
+    #     (
+    #         ffmpeg
+    #         .input(file_1, ss=round(frame_to_analyse / num_frames, 2))
+    #         .output(f'frame_ss_{i}.png', vframes=1)
+    #         .overwrite_output()
+    #         .run(quiet=True)
+    #     )
